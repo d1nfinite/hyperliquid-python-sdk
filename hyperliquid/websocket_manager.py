@@ -85,7 +85,10 @@ class WebsocketManager(threading.Thread):
 
     def run(self):
         self.ping_sender.start()
-        self.ws.run_forever(http_proxy_host=self.proxy_config.http_proxy_host, http_proxy_port=self.proxy_config.http_proxy_port, http_proxy_auth=(self.proxy_config.http_proxy_username, self.proxy_config.http_proxy_password))
+        if self.proxy_config is not None:
+            self.ws.run_forever(http_proxy_host=self.proxy_config.http_proxy_host, http_proxy_port=self.proxy_config.http_proxy_port, http_proxy_auth=(self.proxy_config.http_proxy_username, self.proxy_config.http_proxy_password), proxy_type="http")
+        else:
+            self.ws.run_forever()
 
     def send_ping(self):
         while not self.stop_event.wait(50):
