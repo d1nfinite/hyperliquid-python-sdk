@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 from collections import defaultdict
-
+from dataclasses import dataclass
 import websocket
 
 from hyperliquid.utils.types import Any, Callable, Dict, List, NamedTuple, Optional, Subscription, Tuple, WsMsg
@@ -60,10 +60,18 @@ def ws_msg_to_identifier(ws_msg: WsMsg) -> Optional[str]:
         return f'userNonFundingLedgerUpdates:{ws_msg["data"]["user"].lower()}'
     elif ws_msg["channel"] == "webData2":
         return f'webData2:{ws_msg["data"]["user"].lower()}'
+    
+    
+@dataclass
+class WebsocketManagerProxyConfig:
+    http_proxy_host: str = None
+    http_proxy_port: int = None
+    http_proxy_username: str = None
+    http_proxy_password: str = None
 
 
 class WebsocketManager(threading.Thread):
-    def __init__(self, base_url):
+    def __init__(self, base_url, proxy_config: Optional[WebsocketManagerProxyConfig] = None):
         super().__init__()
         self.subscription_id_counter = 0
         self.ws_ready = False
@@ -73,10 +81,11 @@ class WebsocketManager(threading.Thread):
         self.ws = websocket.WebSocketApp(ws_url, on_message=self.on_message, on_open=self.on_open)
         self.ping_sender = threading.Thread(target=self.send_ping)
         self.stop_event = threading.Event()
+        self.proxy_config = proxy_config
 
     def run(self):
         self.ping_sender.start()
-        self.ws.run_forever()
+        self.ws.run_forever(http_proxy_host=self.proxy_config.http_proxy_host, http_proxy_port=self.proxy_config.http_proxy_port, http_proxy_auth=(self.proxy_config.http_proxy_username, self.proxy_config.http_proxy_password))
 
     def send_ping(self):
         while not self.stop_event.wait(50):
