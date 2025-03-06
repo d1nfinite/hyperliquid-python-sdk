@@ -10,7 +10,7 @@ from hyperliquid.utils.types import (
     Subscription,
     cast,
 )
-from hyperliquid.websocket_manager import WebsocketManager, WebsocketProxyConfig
+from hyperliquid.websocket_manager import WebsocketManager, WebsocketManagerProxyConfig
 
 
 class Info(API):
@@ -20,7 +20,7 @@ class Info(API):
         skip_ws: Optional[bool] = False,
         meta: Optional[Meta] = None,
         spot_meta: Optional[SpotMeta] = None,
-        proxy_config: Optional[WebsocketProxyConfig] = None,
+        proxy_config: Optional[WebsocketManagerProxyConfig] = None,
     ):
         super().__init__(base_url)
         self.ws_manager: Optional[WebsocketManager] = None
