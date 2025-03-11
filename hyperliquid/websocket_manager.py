@@ -85,10 +85,28 @@ class WebsocketManager(threading.Thread):
 
     def run(self):
         self.ping_sender.start()
-        if self.proxy_config is not None:
-            self.ws.run_forever(http_proxy_host=self.proxy_config.http_proxy_host, http_proxy_port=self.proxy_config.http_proxy_port, http_proxy_auth=(self.proxy_config.http_proxy_username, self.proxy_config.http_proxy_password), proxy_type="http")
-        else:
-            self.ws.run_forever()
+        while not self.stop_event.is_set():
+            try:
+                if self.proxy_config is not None:
+                    self.ws.run_forever(
+                        http_proxy_host=self.proxy_config.http_proxy_host,
+                        http_proxy_port=self.proxy_config.http_proxy_port,
+                        http_proxy_auth=(self.proxy_config.http_proxy_username, self.proxy_config.http_proxy_password),
+                        proxy_type="http"
+                    )
+                else:
+                    self.ws.run_forever()
+            except Exception as e:
+                logging.error(f"Websocket connection error: {e}")
+                logging.info("Attempting to reconnect in 5 seconds...")
+                self.ws.close()
+                self.ws_ready = False
+                self.stop_event.wait(5)  # 等待5秒后重连
+                self.ws = websocket.WebSocketApp(
+                    self.ws.url, on_message=self.on_message, on_open=self.on_open
+                )
+            else:
+                break  # 如果没有异常，退出循环
 
     def send_ping(self):
         while not self.stop_event.wait(50):
